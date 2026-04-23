@@ -5,9 +5,11 @@ import java.util.*;
 public class Timetable {
 
     private Map<DayOfWeek, TreeMap<TimeOfDay, List<TrainingSession>>> timetable;
+    private Map<Coach, Integer> coachesCounter;
 
     public Timetable() {
         timetable = new HashMap<>();
+        coachesCounter = new HashMap<>();
     }
 
     public void addNewTrainingSession(TrainingSession trainingSession) {
@@ -22,20 +24,20 @@ public class Timetable {
         if (sessions == null) {
             sessions = new ArrayList<>();
             dayMap.put(time, sessions);
-            sessions.add(trainingSession);
         }
+        sessions.add(trainingSession);
+
+        // Обновление счетчика занятий для тренера
+        Coach coach = trainingSession.getCoach();
+        coachesCounter.put(coach, coachesCounter.getOrDefault(coach, 0) + 1);
     }
 
-    public List<TrainingSession> getTrainingSessionsForDay(DayOfWeek dayOfWeek) {
+    public Map<TimeOfDay, List<TrainingSession>> getTrainingSessionsForDay(DayOfWeek dayOfWeek) {
         TreeMap<TimeOfDay, List<TrainingSession>> dayMap = timetable.get(dayOfWeek);
         if (dayMap == null) {
-            return Collections.emptyList();
+            return new TreeMap<>();
         }
-        List<TrainingSession> result = new ArrayList<>();
-        for (List<TrainingSession> list : dayMap.values()) {
-            result.addAll(list);
-        }
-        return result;
+        return dayMap;
     }
 
     public List<TrainingSession> getTrainingSessionsForDayAndTime(DayOfWeek dayOfWeek, TimeOfDay timeOfDay) {
@@ -52,23 +54,10 @@ public class Timetable {
     }
 
     public List<CounterOfTrainings> getCountByCoaches() {
-        Map<Coach, Integer> countMap = new HashMap<>();
-        for (TreeMap<TimeOfDay, List<TrainingSession>> dayMap : timetable.values()) {
-            for (List<TrainingSession> sessions : dayMap.values()) {
-                for (TrainingSession session : sessions) {
-                    Coach coach = session.getCoach();
-                    if (countMap.containsKey(coach)) {
-                        Integer currentCount = countMap.get(coach);
-                        countMap.put(coach, currentCount + 1);
-                    } else {
-                        countMap.put(coach, 1);
-                    }
-                }
-            }
-        }
+
         // Преобразование Map в список объектов CounterOfTraining
         List<CounterOfTrainings> result = new ArrayList<>();
-        for (Map.Entry<Coach, Integer> entry : countMap.entrySet()) {
+        for (Map.Entry<Coach, Integer> entry : coachesCounter.entrySet()) {
             result.add(new CounterOfTrainings(entry.getKey(), entry.getValue()));
         }
         // Сортировка списка по убыванию количества занятий
